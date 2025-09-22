@@ -1,0 +1,51 @@
+# Does the share of the population living in urban areas coincide with changes in domestic government health expenditure in Andorra between 2000 and 2020?
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+
+# Folders
+data_raw_folder = "data_raw/"
+data_clean_folder = "data_clean/"
+figures_folder = "figures/"
+
+# Load CSV
+filename = "andorra_combined.csv"  # Filtered dataset with only relevant rows
+df = pd.read_csv(os.path.join(data_raw_folder, filename))
+
+# Keep only needed columns
+df = df[["Year", "Indicator Name", "Value"]]
+
+# Convert Year and Value to numeric, drop invalid rows
+df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
+df["Value"] = pd.to_numeric(df["Value"], errors="coerce")
+df = df.dropna(subset=["Year", "Value"])
+
+# Pivot indicators into separate columns
+df_pivot = df.pivot(index="Year", columns="Indicator Name", values="Value").reset_index()
+df_pivot = df_pivot.sort_values("Year")
+
+print("Pivoted Andorra dataset:")
+display(df_pivot)
+
+# Interpolate missing values for smooth plotting (optional)
+df_plot = df_pivot.interpolate(method='linear')
+
+# Plot the two indicators
+plt.figure(figsize=(10,6))
+plt.plot(df_plot["Year"], df_plot["Domestic general government health expenditure (% of general government expenditure)"], 
+         marker='o', linestyle='-', label="Domestic general government health expenditure (% of general government expenditure)")
+plt.plot(df_plot["Year"], df_plot["Urban population (% of total population)"], 
+         marker='o', linestyle='-', label="Urban population (% of total population)")
+
+plt.title("Andorra: Domestic General Government Health Expenditure vs Urban Population (2000-2020)")
+plt.xlabel("Year")
+plt.ylabel("Percentage")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig(os.path.join(figures_folder, "andorra_dom_gen_gov_health_exp_vs_urban_pop.png"))
+plt.show()
+
+# Save cleaned CSV
+df_pivot.to_csv(os.path.join(data_clean_folder, "andorra_dom_gen_gov_health_exp_vs_urban_pop"), index=False)
